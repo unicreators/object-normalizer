@@ -8,24 +8,46 @@ class ArgumentError extends Error {
     }
 }
 
+const isObject = function (value) { return typeof value === 'object'; },
+    isFunction = function (value) { return typeof value === 'function'; },
+    isString = function (value) { return typeof value === 'string'; };
+
 class ObjectNormalizer {
     constructor(schema, defaultProperty) {
 
-        if (typeof schema !== 'object')
+        if (isObject(schema) == false)
             throw new ArgumentError('schema', `Argument 'schema' must be of Object type.`);
 
-        if (typeof defaultProperty !== 'string'
+        if (isString(defaultProperty) == false
             || ((defaultProperty = defaultProperty.trim()) && false)
             || defaultProperty.length == 0)
             throw new ArgumentError('defaultProperty', `Argument 'defaultProperty' must be of String type.`);
 
+        
+        this.schema = Object.keys(schema).reduce(function (prev, current) {
+            let prop = schema[current];
+
+            if (isObject(prop)) {
+                let sub = new ObjectNormalizer(prop.schema, prop.defaultProperty);
+                prev[current] = function (value) { return sub.normalize(value); }
+                return prev;
+            }
+
+            if (isFunction(prop)) {
+                prev[current] = prop;
+                return prev;
+            }
+
+            throw new ArgumentError(current, `Property '${current}' must be of Function or Object type.`);
+
+        }, {});
+
         this.schemaKeys = Object.keys(schema);
-        this.schema = schema;
         this.defaultOperator = defaultProperty;
     }
 
     normalize(item) {
-        if (typeof item !== 'object') {
+        if (isObject(item) == false) {
             let i = {}; i[this.defaultOperator] = item;
             item = i;
         }

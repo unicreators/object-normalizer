@@ -51,7 +51,7 @@ describe('test.js', function () {
 
         let nor = new ObjectNormalizer(schema, defaultPropertyName);
         let r = nor.normalize(function () { });
-    
+
         assert(r.prop1 == 1);
         assert(typeof r.prop2 === 'function');
 
@@ -63,6 +63,41 @@ describe('test.js', function () {
         let nor = new ObjectNormalizer(schema, defaultPropertyName);
 
         assert.throws(function () { nor.normalize({ prop1: 3, prop2: 'aa' }); }, Error);
+
+    });
+
+    it('normalize (deep)', function () {
+
+        let nor = new ObjectNormalizer({
+            parent1: function (value) {
+                if (value == undefined) value = 'parent1';
+                return value;
+            },
+            parent2: {
+                schema: {
+                    'prop1': function (value) {
+                        if (value == undefined) value = 1;
+                        return value;
+                    },
+                    'prop2': function (value) {
+                        if (typeof value !== 'function')
+                            throw new Error(`'prop2' must be of Function type.`);
+                        return value;
+                    }
+                },
+                defaultProperty: 'prop2'
+            }
+        }, 'parent2');
+
+        let r = nor.normalize(function () { return 'hello!'; });
+
+        console.log(r);
+        console.log(r.parent2.prop2());
+
+        assert(r.parent1 == 'parent1');
+        assert(r.parent2.prop1 == 1);
+        assert(typeof r.parent2.prop2 === 'function');
+
 
     });
 });
