@@ -10,35 +10,57 @@ class ArgumentError extends Error {
 
 const isObject = function (value) { return typeof value === 'object'; },
     isFunction = function (value) { return typeof value === 'function'; },
-    isString = function (value) { return typeof value === 'string'; };
+    isString = function (value) { return typeof value === 'string'; },
+    isArray = function (value) { return Array.isArray(value); };
+
+const wrapArray = function (fn) {
+    return function (value) {
+        value = value || [];
+        if (isArray(value) == false) value = [value];
+        return value.map(function (item) { return fn(item); });
+    };
+}
 
 class ObjectNormalizer {
     constructor(schema, defaultProperty) {
 
+        if (isArray(schema)) {
+            if (schema.length == 0)
+                throw new ArgumentError('schema', `Argument 'schema' must be of Object/[Object] type.`);
+            this.rootArray = true;
+            schema = schema[0];
+        }
+
         if (isObject(schema) == false)
-            throw new ArgumentError('schema', `Argument 'schema' must be of Object type.`);
+            throw new ArgumentError('schema', `Argument 'schema' must be of Object/[Object] type.`);
 
         if (isString(defaultProperty) == false
             || ((defaultProperty = defaultProperty.trim()) && false)
             || defaultProperty.length == 0)
             throw new ArgumentError('defaultProperty', `Argument 'defaultProperty' must be of String type.`);
 
-        
-        this.schema = Object.keys(schema).reduce(function (prev, current) {
-            let prop = schema[current];
 
-            if (isObject(prop)) {
-                let sub = new ObjectNormalizer(prop.schema, prop.defaultProperty);
-                prev[current] = function (value) { return sub.normalize(value); }
-                return prev;
+        this.schema = Object.keys(schema).reduce(function (prev, current) {
+            let prop = schema[current], _array = isArray(prop);
+
+            if (_array) {
+                if (prop.length == 0)
+                    throw new ArgumentError(current, `Property '${current}' must be of Function/[Function] or Object/[Object] type.`);
+                prop = prop[0];
             }
 
             if (isFunction(prop)) {
-                prev[current] = prop;
+                prev[current] = _array ? wrapArray(prop) : prop;
                 return prev;
             }
 
-            throw new ArgumentError(current, `Property '${current}' must be of Function or Object type.`);
+            if (isObject(prop)) {
+                let sub = new ObjectNormalizer(prop.schema, prop.defaultProperty);
+                prev[current] = _array ? wrapArray(sub.normalize, this) : function (value) { return sub.normalize(value); }
+                return prev;
+            }
+
+            throw new ArgumentError(current, `Property '${current}' must be of Function/[Function] or Object/[Object] type.`);
 
         }, {});
 
@@ -47,10 +69,16 @@ class ObjectNormalizer {
     }
 
     normalize(item) {
+        return (isArray(item) || this.rootArray) ?
+            wrapArray(this._.bind(this))(item) : this._(item);
+    }
+
+    _(item) {
         if (isObject(item) == false) {
             let i = {}; i[this.defaultOperator] = item;
             item = i;
         }
+
         let schema = this.schema;
         return this.schemaKeys.reduce(function (prev, current) {
             prev[current] = schema[current](item[current]);
