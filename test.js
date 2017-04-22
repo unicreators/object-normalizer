@@ -66,6 +66,57 @@ describe('test.js', function () {
 
     });
 
+    it('normalize (array)', function () {
+
+        let nor = new ObjectNormalizer({
+            'prop1': [function (value) {
+                if (value == undefined) value = 1;
+                return value;
+            }],
+            'prop2': function (value) {
+                if (typeof value !== 'function')
+                    throw new Error(`'prop2' must be of Function type.`);
+                return value;
+            }
+        }, 'prop2');
+
+        let r = nor.normalize(function () { return 'hello!'; });
+
+        assert(r.prop1);
+        assert(Array.isArray(r.prop1));
+        assert(r.prop1.length == 0);     
+        assert(typeof r.prop2 === 'function');
+
+
+    });
+
+    it('normalize (root array)', function () {
+
+        let nor = new ObjectNormalizer([{
+            'prop1': [function (value) {
+                if (value == undefined) value = 1;
+                return value;
+            }],
+            'prop2': function (value) {
+                if (typeof value !== 'function')
+                    throw new Error(`'prop2' must be of Function type.`);
+                return value;
+            }
+        }], 'prop2');
+
+        let r = nor.normalize([function () { return 'hello!'; }]);
+
+        assert(r);
+        assert(Array.isArray(r));
+        assert(r.length == 1);     
+        assert(r[0].prop1);
+        assert(Array.isArray(r[0].prop1));
+        assert(r[0].prop1.length == 0);     
+        assert(typeof r[0].prop2 === 'function');
+
+
+    });
+
     it('normalize (deep)', function () {
 
         let nor = new ObjectNormalizer({
@@ -90,9 +141,6 @@ describe('test.js', function () {
         }, 'parent2');
 
         let r = nor.normalize(function () { return 'hello!'; });
-
-        console.log(r);
-        console.log(r.parent2.prop2());
 
         assert(r.parent1 == 'parent1');
         assert(r.parent2.prop1 == 1);
