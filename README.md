@@ -96,7 +96,9 @@ const schema = {
         if (typeof value !== 'function')
             throw new Error(`'prop2' must be of Function type.`);
         return value;
-    }
+    },
+    // to array, not validate
+    'prop3': []
 };
 
 const defaultPropertyName = 'prop2';
@@ -105,7 +107,7 @@ let nor = new ObjectNormalizer(schema, defaultPropertyName);
 let r = nor.normalize(function () { });
 
 console.log(r);
-// { prop1: [], prop2: [Function] }
+// { prop1: [], prop2: [Function], prop3: [] }
 
 
 ```
