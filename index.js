@@ -13,11 +13,11 @@ const isObject = function (value) { return typeof value === 'object'; },
     isString = function (value) { return typeof value === 'string'; },
     isArray = function (value) { return Array.isArray(value); };
 
-const wrapArray = function (fn) {
+const wrapArray = function (fn = undefined) {
     return function (value) {
         value = value || [];
         if (isArray(value) == false) value = [value];
-        return value.map(function (item) { return fn(item); });
+        return fn ? value.map(function (item) { return fn(item); }) : value;
     };
 }
 
@@ -44,8 +44,10 @@ class ObjectNormalizer {
             let prop = schema[current], _array = isArray(prop);
 
             if (_array) {
-                if (prop.length == 0)
-                    throw new ArgumentError(current, `Property '${current}' must be of Function/[Function] or Object/[Object] type.`);
+                if (prop.length == 0) {
+                    prev[current] = wrapArray();
+                    return prev;
+                }
                 prop = prop[0];
             }
 

@@ -84,7 +84,7 @@ describe('test.js', function () {
 
         assert(r.prop1);
         assert(Array.isArray(r.prop1));
-        assert(r.prop1.length == 0);     
+        assert(r.prop1.length == 0);
         assert(typeof r.prop2 === 'function');
 
 
@@ -108,11 +108,32 @@ describe('test.js', function () {
 
         assert(r);
         assert(Array.isArray(r));
-        assert(r.length == 1);     
+        assert(r.length == 1);
         assert(r[0].prop1);
         assert(Array.isArray(r[0].prop1));
-        assert(r[0].prop1.length == 0);     
+        assert(r[0].prop1.length == 0);
         assert(typeof r[0].prop2 === 'function');
+
+
+    });
+
+    it('normalize (empty array)', function () {
+
+        let nor = new ObjectNormalizer({
+            'prop1': [],
+            'prop2': function (value) {
+                return value || 'hello!';
+            }
+        }, 'prop2');
+
+        let { prop1, prop2 } = nor.normalize({ prop1: [function () { return 'item 0'; }, 1] });
+
+        assert(prop1);
+        assert(Array.isArray(prop1));
+        assert(prop1.length == 2);
+        assert(prop1[0]() == 'item 0');
+        assert(prop1[1] == 1);
+        assert(prop2 === 'hello!');
 
 
     });
