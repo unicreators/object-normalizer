@@ -58,7 +58,7 @@ class ObjectNormalizer {
 
             if (isObject(prop)) {
                 let sub = new ObjectNormalizer(prop.schema, prop.defaultProperty);
-                prev[current] = _array ? wrapArray(sub.normalize, this) : function (value) { return sub.normalize(value); }
+                prev[current] = _array ? wrapArray(sub.normalize.bind(sub)) : function (value) { return sub.normalize(value); }
                 return prev;
             }
 
